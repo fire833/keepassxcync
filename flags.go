@@ -34,4 +34,18 @@ func init() {
 	remote.AttachSubcommand(list, 1)
 
 	f.Parse()
+
+	switch {
+	case remote.Used:
+		{
+			if list.Used {
+				OP = "list"
+			} else if add.Used {
+				OP = "add"
+			} else if delete.Used {
+				OP = "delete"
+			}
+		}
+	}
+
 }
