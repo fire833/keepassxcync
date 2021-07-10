@@ -2,7 +2,21 @@ package main
 
 import f "github.com/integrii/flaggy"
 
-var OP string // Operation mode for the binary during this run
+/*
+
+OP integers:
+
+0: Default value, this runs on auto start-up, and it is when the binary tries to pull a newer version of the database down from cloud onto the local machine.
+1: Mode where the binary finds the newest version of your local database, and uploads it to all available remotes.
+2: Mode that creates a new remotes configuration, either encrypted or unencrypted.
+3: Mode for listing remotes in the available configuration.
+4: Mode that edits the configuration, either encrypted or unencrypted.
+5: Mode for deleting a configuration of remotes, but could be done manually I suppose.
+6. Mode for adding remotes to your configuration.
+
+*/
+
+var OP int = 0 // Operation mode for the binary during this run
 // var NewRemote string // String featuring the credentials
 var NAME string // Name of remote to add/delete
 
@@ -39,11 +53,11 @@ func init() {
 	case remote.Used:
 		{
 			if list.Used {
-				OP = "list"
+				OP = 3
 			} else if add.Used {
-				OP = "add"
+				OP = 6
 			} else if delete.Used {
-				OP = "delete"
+				OP = 5
 			}
 		}
 	}
