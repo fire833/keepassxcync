@@ -1,14 +1,19 @@
 package options
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"os"
 	fp "path/filepath"
+	"regexp"
+	"syscall"
 
 	"gopkg.in/yaml.v3"
+
+	"golang.org/x/term"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -170,15 +175,56 @@ func (r *Remote) GetName() string {
 }
 
 // Adds new remote to current options object.
-func (o *Options) AddRemote(name, endp, region, bucket, key, id string) {
+func (o *Options) AddRemote() {
+
+	var def bool
+
+	scan := bufio.NewScanner(os.Stdin)
+	fmt.Print("Enter name of remote: ")
+	scan.Scan()
+	name := scan.Text()
+	fmt.Print("Enter remote URI: ")
+	scan.Scan()
+	endpoint := scan.Text()
+	fmt.Print("Enter remote region: ")
+	scan.Scan()
+	region := scan.Text()
+	fmt.Print("Enter remote bucket name: ")
+	scan.Scan()
+	bucket := scan.Text()
+	fmt.Print("Enter remote Key ID: ")
+	scan.Scan()
+	id := scan.Text()
+	fmt.Print("Enter remote key: ")
+	key, err := term.ReadPassword(int(syscall.Stdin))
+	if err != nil {
+		fmt.Print("Error with reading password, please try again.")
+		os.Exit(1)
+	}
+	fmt.Print("Do you want this remote (" + name + ") to be set as the default remote? [y/N]")
+	scan.Scan()
+
+	if regexp.MustCompile(`[Nn].*`).MatchString(scan.Text()) || scan.Text() == "" {
+		def = false
+	} else if regexp.MustCompile(`[Yy].*`).MatchString(scan.Text()) {
+		def = true
+	}
+
+	// Add the compiled remote to the list.
 	o.Remotes = append(o.Remotes, Remote{
-		Name:     name,
-		Endpoint: endp,
-		Region:   region,
-		Bucket:   bucket,
-		Key:      key,
-		Id:       id,
+		Name:      name,
+		Endpoint:  endpoint,
+		Region:    region,
+		Bucket:    bucket,
+		Key:       string(key),
+		Id:        id,
+		IsDefault: def,
 	})
+
+	// Ping the remote to make sure that it works and you have proper access with those API keys.
+	// Do this before persisting the remote to disk.
+	// client, err1 := o.NewS3Client(name)
+
 }
 
 // Prints each of the remotes out to stout.

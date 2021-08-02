@@ -4,6 +4,7 @@ import (
 	"runtime"
 
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/fire833/keepassxcync/src/config/debug"
 	op "github.com/fire833/keepassxcync/src/config/options"
 	f "github.com/integrii/flaggy"
 )
@@ -22,7 +23,7 @@ OP integers:
 4: Delete remotes from current config
 5: Update remotes from current config
 
-6: Try to sync your databse with the database of a specified remote.
+6: Try to sync your database with the database of a specified remote.
 
 */
 
@@ -30,7 +31,8 @@ var OP int = 0 // Operation mode for the binary during this run
 // var NewRemote string // String featuring the credentials
 var NAME string   // Name of remote to add/delete
 var DBNAME string // name of database file to interact upon
-var DEFAULT bool  // Var to pass around whether or not to set a
+var DEFAULT bool  // Var to pass around whether or not to set a remote as the default value.
+var CONFIG string // Path/name
 
 var Version string = "unknown"    // String to pass in the version to the binary at compiletime.
 var Commit string = "unknown"     // Git commit version of this binary.
@@ -38,7 +40,9 @@ var Go string = runtime.Version() // Go version at runtime.
 var Os string = runtime.GOOS      // operating system for this binary
 var Arch string = runtime.GOARCH  // architecture for this binary
 
-func init() {
+var globalS3 *s3.S3
+
+func main() {
 
 	f.SetName("Keepassxcync")
 	f.SetDescription("A portable binary to automatically sync your keepass/keepassxc databases to multiple remote clouds. ")
@@ -48,18 +52,22 @@ func init() {
 	add := f.NewSubcommand("add")
 	add.Description = "Use this subcommand if you want to add a remote to your current configuration."
 	add.String(&NAME, "n", "name", "The name of the remote you want to add.")
+	add.String(&CONFIG, "f", "file", "Specify the config file/path to config file you want to utilize.")
 
 	delete := f.NewSubcommand("delete")
 	delete.Description = "Use this subcommand if you want to delete a remote from your current configuration."
 	delete.String(&NAME, "n", "name", "The name of the remote you want to delete.")
+	delete.String(&CONFIG, "f", "file", "Specify the config file/path to config file you want to utilize.")
 
 	list := f.NewSubcommand("list")
 	list.Description = "Use this subcommand if you want to list available remotes."
+	list.String(&CONFIG, "f", "file", "Specify the config file/path to config file you want to utilize.")
 
 	update := f.NewSubcommand("update")
 	update.Description = "Use this subcommand to update the values of a specific remote."
 	update.String(&NAME, "n", "name", "The name of the remote you want to update.")
 	update.Bool(&DEFAULT, "d", "set-default", "Specify that this remote should be set as the default remote.")
+	update.String(&CONFIG, "f", "file", "Specify the config file/path to config file you want to utilize.")
 
 	remote := f.NewSubcommand("remote")
 	remote.Description = "Add, remove, list, and update the remotes that are configured to be written/read from when updating/uploading your database."
@@ -69,6 +77,7 @@ func init() {
 	sync.Description = "Sync up your database with specified remote. It either pulls a newer version from the specified remote or pushes your local version if it is the most up-to-date."
 	sync.String(&NAME, "n", "name", "Specify the name of the remote you want to sync with, otherwise defaults to the remote with default bool set to true.")
 	sync.String(&DBNAME, "f", "file", "Specify the specific database file to sync up.")
+	sync.String(&CONFIG, "c", "config", "Specify the config file/path to config file you want to utilize.")
 	f.AttachSubcommand(sync, 1)
 
 	remote.AttachSubcommand(add, 1)
@@ -78,17 +87,23 @@ func init() {
 
 	f.Parse()
 
+	opts := op.NewOptions()
+
 	switch {
 	case remote.Used:
 		{
 			switch {
 			case list.Used:
 				{
-					OP = 2
+					if debug.DEBUG == true {
+						opts.Options.PrintRemotes(true)
+					} else {
+						opts.Options.PrintRemotes(false)
+					}
 				}
 			case add.Used:
 				{
-					OP = 3
+					opts.Options.AddRemote()
 				}
 			case delete.Used:
 				{
@@ -104,19 +119,6 @@ func init() {
 		{
 			OP = 6
 		}
-	}
-
-}
-
-var globalS3 *s3.S3
-
-func main() {
-
-	opts := op.NewOptions()
-
-	switch OP {
-	case 0:
-		opts.Options.
 	}
 
 }
