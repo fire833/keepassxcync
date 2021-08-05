@@ -1,4 +1,4 @@
-package options
+package src
 
 import (
 	"bufio"
@@ -27,12 +27,15 @@ type OptionMeta struct {
 	File *os.File
 	// Unmarshalled options information
 	Options *Options
-	// The exact file descriptor of the databse to sync.
-	Db *os.File
+	// The exact file descriptor of the database to sync.
+	// Db *os.File
 }
 
 // Primary options struct, options.json/.yml/.yaml file unmarshalls into this
 type Options struct {
+	// Specifies the supposed name of the databse that you want to sync
+	// with this binary. Should be a name
+	DatabaseName string `json:"db_name"`
 	// Array of remotes that can be uploaded to/downloaded form.
 	Remotes []Remote `json:"remote"`
 }
@@ -44,9 +47,9 @@ type Remote struct {
 	// Actual URI of the endpoint.
 	Endpoint string `json:"endpoint"`
 	// Specify the region of the endpoint to pass in to the sdk.
-	Region string
+	Region string `json:"region"`
 	// Specify the bucket name to sync with
-	Bucket string
+	Bucket string `json:"bucket"`
 	// API key id of the remote.
 	Id string `json:"api_id"`
 	// API key of the remote.
@@ -62,71 +65,111 @@ type Remote struct {
 // of where the binary is.
 func NewOptions() (o *OptionMeta) {
 
-	opt := o.Options
+	if CONFIG == "" {
+		file, err := os.ReadDir(os.Getenv("PWD")) // read all files in the current working directory where the binary was executed.
+		if err != nil {
+			fmt.Printf("Failed to read working directory for options file: %v\n", err)
+			os.Exit(1)
+		}
 
-	file, err := os.ReadDir(os.Getenv("PWD")) // read all files in the current working directory where the binary was executed.
-	if err != nil {
-		fmt.Printf("Failed to read working directory for options file: %v\n", err)
-		os.Exit(1)
-	}
+		for _, r := range file {
 
-	for _, r := range file {
+			info, err1 := r.Info()
+			if err1 != nil && debug.DEBUG == true {
+				fmt.Printf("Failed to get fileinfo from file: %v, error was: %v\n", info.Name(), err1)
+				continue
+			} else if err1 != nil {
+				continue
+			}
 
-		info, err1 := r.Info()
+			file, err2 := os.ReadFile(fp.Join(os.Getenv("PWD"), info.Name()))
+			if err2 != nil && debug.DEBUG == true {
+				fmt.Printf("Failed to read file %v, error was: %v\n", info.Name(), err2)
+			} else if err2 != nil {
+				continue
+			}
+
+			switch info.Name() {
+			case "options.json":
+				{
+					err3 := json.Unmarshal(file, o.Options)
+					if err3 != nil && debug.DEBUG == true {
+						fmt.Printf("Failed to unmarshall json file %v , error: %v", info.Name(), err3)
+						continue
+					} else if err3 != nil {
+						continue
+					}
+				}
+			case "options.yaml", "options.yml":
+				{
+					err4 := yaml.Unmarshal(file, o.Options)
+					if err4 != nil && debug.DEBUG == true {
+						fmt.Printf("Failed to unmarshall yaml file %v , error: %v", info.Name(), err4)
+						continue
+					} else if err4 != nil {
+						continue
+					}
+				}
+			default:
+				{
+					continue
+				}
+			}
+
+			fd, err1 := os.OpenFile(fp.Join(os.Getenv("PWD"), r.Name()), os.O_CREATE|os.O_SYNC|os.O_RDWR, 0755)
+			if err1 != nil && debug.DEBUG == true {
+				fmt.Printf("Unable to open file %v, error: %v", r.Name(), err1)
+			} else if err != nil {
+				os.Exit(1)
+			}
+			o.File = fd
+
+		}
+
+	} else {
+
+		data, err := os.ReadFile(CONFIG)
+		if err != nil {
+			fmt.Println("Unable to read file " + CONFIG + ", error: " + err.Error())
+			os.Exit(1)
+		}
+
+		switch fp.Ext(CONFIG) {
+		case ".json":
+			{
+				err := json.Unmarshal(data, o)
+				if err != nil {
+					fmt.Println("Error unmarshalling options file: " + err.Error())
+					os.Exit(1)
+				}
+				return o
+			}
+		case ".yaml", ".yml":
+			{
+				err := yaml.Unmarshal(data, o)
+				if err != nil {
+					fmt.Println("Error unmarshalling options file: " + err.Error())
+					os.Exit(1)
+				}
+				return o
+			}
+		default:
+			{
+				fmt.Println("Unable to parse the options file you provided.")
+				os.Exit(1)
+			}
+		}
+
+		fd, err1 := os.OpenFile(CONFIG, os.O_CREATE|os.O_SYNC|os.O_RDWR, 0755)
 		if err1 != nil && debug.DEBUG == true {
-			fmt.Printf("Failed to get fileinfo from file: %v, error was: %v\n", info.Name(), err1)
-			continue
-		} else if err1 != nil {
-			continue
+			fmt.Printf("Unable to open file %v, error: %v", CONFIG, err1)
+		} else if err != nil {
+			os.Exit(1)
 		}
-
-		file, err2 := os.ReadFile(fp.Join(os.Getenv("PWD"), info.Name()))
-		if err2 != nil && debug.DEBUG == true {
-			fmt.Printf("Failed to read file %v, error was: %v\n", info.Name(), err2)
-		} else if err2 != nil {
-			continue
-		}
-
-		switch info.Name() {
-		case "options.json":
-			{
-				err3 := json.Unmarshal(file, opt)
-				if err3 != nil && debug.DEBUG == true {
-					fmt.Printf("Failed to unmarshall json file %v , error: %v", info.Name(), err3)
-					continue
-				} else if err3 != nil {
-					continue
-				}
-				fd, err5 := os.OpenFile(fp.Join(os.Getenv("PWD"), r.Name()), os.O_CREATE|os.O_SYNC|os.O_RDWR, 0755)
-				if err5 != nil && debug.DEBUG == true {
-					fmt.Printf("Unable to open file %v, error: %v", r.Name(), err5)
-				} else if err != nil {
-					os.Exit(1)
-				}
-				o.File = fd
-				return o
-			}
-		case "options.yaml", "options.yml":
-			{
-				err4 := yaml.Unmarshal(file, opt)
-				if err4 != nil && debug.DEBUG == true {
-					fmt.Printf("Failed to unmarshall yaml file %v , error: %v", info.Name(), err4)
-					continue
-				} else if err4 != nil {
-					continue
-				}
-				fd, err6 := os.OpenFile(fp.Join(os.Getenv("PWD"), r.Name()), os.O_CREATE|os.O_SYNC|os.O_RDWR, 0755)
-				if err6 != nil && debug.DEBUG == true {
-					fmt.Printf("Unable to open file %v, error: %v", r.Name(), err6)
-				} else if err != nil {
-					os.Exit(1)
-				}
-				o.File = fd
-				return o
-			}
-		}
+		o.File = fd
 
 	}
+
 	log.Fatal("No files in working directory that are options files.")
 	return nil
 }
@@ -175,7 +218,7 @@ func (r *Remote) GetName() string {
 }
 
 // Adds new remote to current options object.
-func (o *Options) AddRemote() {
+func (o *OptionMeta) AddRemote() {
 
 	var def bool
 
@@ -211,7 +254,7 @@ func (o *Options) AddRemote() {
 	}
 
 	// Add the compiled remote to the list.
-	o.Remotes = append(o.Remotes, Remote{
+	o.Options.Remotes = append(o.Options.Remotes, Remote{
 		Name:      name,
 		Endpoint:  endpoint,
 		Region:    region,
@@ -227,9 +270,18 @@ func (o *Options) AddRemote() {
 
 }
 
+func (o *OptionMeta) RemoveRemote() {
+	for i, remote := range o.Options.Remotes {
+		if remote.Name == NAME {
+			o.Options.Remotes[i] = o.Options.Remotes[len(o.Options.Remotes)-1]
+			o.Options.Remotes = o.Options.Remotes[:len(o.Options.Remotes)-1]
+		}
+	}
+}
+
 // Prints each of the remotes out to stout.
-func (o *Options) PrintRemotes(printkey bool) {
-	for i, r := range o.Remotes {
+func (o *OptionMeta) PrintRemotes(printkey bool) {
+	for i, r := range o.Options.Remotes {
 		fmt.Printf("Remote #%d: \n ", i)
 		fmt.Printf("Name: %s \n Remote Url: %s \n Remote key Id: %s \n", r.Name, r.Endpoint, r.Id)
 		if printkey == true {
