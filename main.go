@@ -110,11 +110,11 @@ func main() {
 				}
 			case delete.Used:
 				{
-
+					opts.RemoveRemote()
 				}
 			case update.Used:
 				{
-
+					opts.UpdateRemote()
 				}
 			}
 		}
