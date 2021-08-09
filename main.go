@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"runtime"
 
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -91,6 +92,7 @@ func main() {
 	f.Parse()
 
 	opts := op.NewOptions()
+	defer opts.File.Close()
 
 	switch {
 	case remote.Used:
@@ -123,5 +125,7 @@ func main() {
 
 		}
 	}
+
+	os.Exit(0)
 
 }
