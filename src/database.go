@@ -2,6 +2,7 @@ package src
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	fp "path/filepath"
@@ -91,17 +92,82 @@ func (o *Options) GetNewestRemoteDB(client *s3.S3) (name string, file *s3.Object
 
 }
 
+type LocalFileSummary struct {
+	// Name of object
+	Name string
+	// Pointer to some file object that is either an s3 object version or an os.File
+	File *os.File
+	// Error if there was any with finding the operation.
+	Error error
+}
+
+type RemoteFileSumary struct {
+	// Name of object
+	Name string
+	// Pointer to some file object that is either an s3 object version or an os.File
+	File *s3.ObjectVersion
+	// Error if there was any with finding the operation.
+	Error error
+}
+
 // Main function that either triggers a pull of the newer version of the database from
 // the default remote, or will upload the current version of the database locally to the remote.
 func (o *OptionMeta) PushPull(client *s3.S3) error {
 
-	go func(in string) (localname string, localfile *os.File, e error) {
-		return o.Options.GetNewestLocalDB(in)
+	localinfo := make(chan LocalFileSummary)
+	remoteinfo := make(chan RemoteFileSumary)
+
+	go func(in string) {
+		localname, localfile, e := o.Options.GetNewestLocalDB(in)
+		info := LocalFileSummary{
+			Name:  localname,
+			File:  localfile,
+			Error: e,
+		}
+
+		localinfo <- info
+
 	}(os.Getenv("PWD"))
 
-	go func(sess *s3.S3) (remotename string, remotefile *s3.ObjectVersion, e error) {
-		return o.Options.GetNewestRemoteDB(sess)
+	go func(sess *s3.S3) {
+		remotename, remotefile, e := o.Options.GetNewestRemoteDB(sess)
+		info := RemoteFileSumary{
+			Name:  remotename,
+			File:  remotefile,
+			Error: e,
+		}
+
+		remoteinfo <- info
 	}(client)
+
+	// I hate all these variables, probably stupid to do all that crap to make the
+	// local and remote search concurrent with each other, but whatever.
+	linf := <-localinfo
+	rinf := <-remoteinfo
+
+	info, _ := linf.File.Stat()
+	lmod := info.ModTime()
+	rmod := *rinf.File.LastModified
+
+	switch {
+	case linf.Error != nil:
+		{
+			fmt.Printf("Error with getting local file information: %v", linf.Error)
+		}
+	case rinf.Error != nil:
+		{
+			fmt.Printf("Error with getting remote file information: %v", rinf.Error)
+		}
+	case lmod.UnixNano() > rmod.UnixNano():
+		{
+
+		}
+	case lmod.UnixNano() < rmod.UnixNano():
+		{
+
+		}
+
+	}
 
 	return nil
 }

@@ -37,6 +37,10 @@ type OptionMeta struct {
 	// List of s3 clients for each of the remotes that are defined in
 	// the options file. Depending on mode there could be only 1 client in the object.
 	Clients []Client
+	// Earlier parts of the program find the default remote, and this will be the
+	// index value for downstream operation to reference the slice instacnce without having to do all sorts
+	// of stuff with finding the default value again.
+	DefaultRemoteIndex int
 }
 
 // Primary options struct, options.json/.yml/.yaml file unmarshalls into this
@@ -452,25 +456,25 @@ func (o *OptionMeta) UpdateRemote() {
 		os.Exit(1)
 	}
 
-	for _, remote := range o.Options.Remotes {
+	for i, remote := range o.Options.Remotes {
 		if remote.Name == NAME {
 			if endpoint != "" {
-				remote.Endpoint = endpoint
+				o.Options.Remotes[i].Endpoint = endpoint
 			}
 			if region != "" {
-				remote.Region = region
+				o.Options.Remotes[i].Region = region
 			}
 			if bucket != "" {
-				remote.Bucket = bucket
+				o.Options.Remotes[i].Bucket = bucket
 			}
 			if id != "" {
-				remote.Id = id
+				o.Options.Remotes[i].Id = id
 			}
 			if key != nil {
-				remote.Key = string(key)
+				o.Options.Remotes[i].Key = string(key)
 			}
 			if yes {
-				remote.IsDefault = true
+				o.Options.Remotes[i].IsDefault = true
 			}
 		}
 	}
@@ -588,4 +592,8 @@ func CheckUserYesNo(input string, defaultyes bool) (b bool, e error) {
 	}
 
 	return false, errors.New("Something weird happened.")
+}
+
+func (o *OptionMeta) HandleDefaults() {
+
 }

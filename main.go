@@ -11,24 +11,6 @@ import (
 	f "github.com/integrii/flaggy"
 )
 
-/*
-
-OP integers:
-
-0: Default value, this tries to sync the newest version of the database either from the default remote
-	to your local machine or if the local version is newer, upload that to the default remote.
-1: Try to upload your local database to all configured remotes.
-
-// Operate on the current configuration
-2: List remotes from current config.
-3: Add remotes to curret config
-4: Delete remotes from current config
-5: Update remotes from current config
-
-6: Try to sync your database with the database of a specified remote.
-
-*/
-
 var OP int = 0 // Operation mode for the binary during this run
 
 var DBNAME string // name of database file to interact upon
