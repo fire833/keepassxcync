@@ -38,39 +38,44 @@ type OptionMeta struct {
 	// the options file. Depending on mode there could be only 1 client in the object.
 	Clients []Client
 	// Earlier parts of the program find the default remote, and this will be the
-	// index value for downstream operation to reference the slice instacnce without having to do all sorts
+	// index value for downstream operation to reference the slice instance without having to do all sorts
 	// of stuff with finding the default value again.
 	DefaultRemoteIndex int
+	// This is the default client referenced by the "default" synching routine.
+	DefClient *Client
 }
 
 // Primary options struct, options.json/.yml/.yaml file unmarshalls into this
 type Options struct {
 	// Specifies the supposed name of the databse that you want to sync
 	// with this binary. Should be a name
-	DatabaseName string `json:"db_name" yaml:"db_name"`
+	DatabaseName string `json:"db_name" yaml:"databaseName"`
 	// Array of remotes that can be uploaded to/downloaded form.
-	Remotes []Remote `json:"remotes" yaml:"remotes"`
+	Remotes []Remote `json:"remotes" yaml:"Remotes"`
+	// Use this regex to match files in the specified directory and just choose
+	// the newest file that is matched by tyhe regex.
+	DatabaseRegex string `json:"db_regex" yaml:"databaseRegex"`
 }
 
 // Describes a remote object, or a specific instance
 type Remote struct {
 	// Name of the remote endpoint.
-	Name string `json:"name" yaml:"name"`
+	Name string `json:"name" yaml:"Name"`
 	// Actual URI of the endpoint.
-	Endpoint string `json:"endpoint" yaml:"endpoint"`
+	Endpoint string `json:"endpoint" yaml:"Endpoint"`
 	// Specify the region of the endpoint to pass in to the sdk.
-	Region string `json:"region" yaml:"region"`
+	Region string `json:"region" yaml:"Region"`
 	// Specify the bucket name to sync with
-	Bucket string `json:"bucket" yaml:"bucket"`
+	Bucket string `json:"bucket" yaml:"Bucket"`
 	// API key id of the remote.
-	Id string `json:"api_id" yaml:"api_id"`
+	Id string `json:"api_id" yaml:"apiId"`
 	// API key of the remote.
-	Key string `json:"api_key" yaml:"api_key"`
+	Key string `json:"api_key" yaml:"apiKey"`
 	// Only one of these remotes can be specified as default, but if this
 	// bool is set to true, the binary will default to try and sync with
 	// this remote as the first attempt. Only one remote in each file can be set
 	// to default, otherwise the "default" remote will be inconsistently chosen.
-	IsDefault bool `json:"default"`
+	IsDefault bool `json:"isdefault" yaml:"isDefault"`
 }
 
 // List of all remotes and their s3 client for utilizing for synching.
@@ -151,10 +156,13 @@ func NewOptions() (o *OptionMeta) {
 			} else if err != nil {
 				os.Exit(1)
 			}
+
 			o.FileData = file // Set the read data into the struct so that it
 			// can be modified when saving the file later on.
 			o.File = fd // Set the file descriptor into the struct for modification
 			// as well, and to sync the status later on.
+			// o.DefClient = client                                // Set default client in case it needs to be used for the default synching routine.
+
 			o.FilePath = fp.Join(os.Getenv("PWD"), info.Name()) // Set the absolute path to the current
 			// options file for synching later on.
 			return o

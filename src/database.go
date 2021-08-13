@@ -6,58 +6,104 @@ import (
 	"io/fs"
 	"os"
 	fp "path/filepath"
+	"regexp"
 
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
 // Finds the newest version of the key database within the desired directory,
 // defaults to the working directory of the binary.
-func (o *Options) GetNewestLocalDB(dir string) (name string, file *os.File, e error) {
+func (o *Options) GetNewestLocalDB() (name string, file *os.File, e error) {
 
-	if o.DatabaseName == "" {
+	switch {
+	case o.DatabaseName == "" && o.DatabaseRegex == "":
+		{
 
-		var files map[int64]fs.DirEntry
-		var times []int64
+			var files map[int64]fs.DirEntry
+			var times []int64
 
-		entries, err := os.ReadDir(dir)
-		if err != nil {
-			return "", nil, err
-		}
-
-		for _, entry := range entries {
-			if fp.Ext(entry.Name()) == ".kdbx" && entry.Name() == o.DatabaseName {
-				info, err := entry.Info()
-				if err != nil {
-					continue
-				}
-				files[info.ModTime().UnixNano()] = entry
-				times = append(times, info.ModTime().UnixNano())
+			entries, err := os.ReadDir(fp.Dir(o.FilePath))
+			if err != nil {
+				return "", nil, err
 			}
+
+			for _, entry := range entries {
+				if fp.Ext(entry.Name()) == ".kdbx" && entry.Name() == o.DatabaseName {
+					info, err := entry.Info()
+					if err != nil {
+						continue
+					}
+					files[info.ModTime().UnixNano()] = entry
+					times = append(times, info.ModTime().UnixNano())
+				}
+			}
+
+			if len(files) == 0 {
+				return "", nil, errors.New("No database files found in directory " + fp.Dir(o.FilePath))
+			}
+
+			name = files[findBiggestTime(times)].Name()
+
+			out, err := os.Open(fp.Join(fp.Dir(o.FilePath), name))
+			if err != nil {
+				return files[findBiggestTime(times)].Name(), out, err
+			}
+
+			return name, out, nil
 		}
+	case o.DatabaseRegex != "" && o.DatabaseName == "" || o.DatabaseName != "" && o.DatabaseRegex != "":
+		{
 
-		if len(files) == 0 {
-			return "", nil, errors.New("No database files found in directory " + dir)
+			var files map[int64]fs.DirEntry
+			var times []int64
+
+			regex, err := regexp.Compile(o.DatabaseRegex)
+			if err != nil {
+				fmt.Printf("Error with parsing your regex statements for finding")
+			}
+
+			entries, err := os.ReadDir(fp.Dir(o.FilePath))
+			if err != nil {
+				return "", nil, err
+			}
+
+			for _, entry := range entries {
+				if regex.MatchString(entry.Name()) {
+					info, err := entry.Info()
+					if err != nil {
+						continue
+					}
+
+					files[info.ModTime().UnixNano()] = entry
+					times = append(times, info.ModTime().UnixNano())
+				}
+			}
+
+			if len(files) == 0 {
+				return "", nil, errors.New("No database files found in directory " + fp.Dir(o.FilePath))
+			}
+
+			name = files[findBiggestTime(times)].Name()
+
+			out, err := os.Open(fp.Join(fp.Dir(o.FilePath), name))
+			if err != nil {
+				return files[findBiggestTime(times)].Name(), out, err
+			}
+
+			return name, out, nil
+
 		}
+	case o.DatabaseName != "" && o.DatabaseRegex == "":
+		{
+			file, err := os.Open(fp.Join(fp.Dir(o.FilePath), o.DatabaseName))
+			if err != nil {
+				return o.DatabaseName, nil, err
+			}
 
-		name = files[findBiggestTime(times)].Name()
-
-		out, err := os.Open(fp.Join(dir, name))
-		if err != nil {
-			return files[findBiggestTime(times)].Name(), out, err
+			return o.DatabaseName, file, nil
 		}
-
-		return name, out, nil
-	} else {
-
-		file, err := os.Open(fp.Join(dir, o.DatabaseName))
-		if err != nil {
-			return o.DatabaseName, nil, err
-		}
-
-		return o.DatabaseName, file, nil
-
 	}
-
+	return "", nil, errors.New("Something weird happened...")
 }
 
 // Looks at the default remote in the options file and then returns the file info/modtime for
@@ -112,13 +158,14 @@ type RemoteFileSumary struct {
 
 // Main function that either triggers a pull of the newer version of the database from
 // the default remote, or will upload the current version of the database locally to the remote.
-func (o *OptionMeta) PushPull(client *s3.S3) error {
+// Designed to be used by default running of the binary or in "sync" mode.
+func (o *Options) PushPull() error {
 
 	localinfo := make(chan LocalFileSummary)
 	remoteinfo := make(chan RemoteFileSumary)
 
 	go func(in string) {
-		localname, localfile, e := o.Options.GetNewestLocalDB(in)
+		localname, localfile, e := o.GetNewestLocalDB()
 		info := LocalFileSummary{
 			Name:  localname,
 			File:  localfile,
@@ -127,10 +174,17 @@ func (o *OptionMeta) PushPull(client *s3.S3) error {
 
 		localinfo <- info
 
-	}(os.Getenv("PWD"))
+	}(fp.Dir(o.FilePath))
+
+	client, err5 := o.NewS3Client("", true)
+	if err5 != nil {
+		fmt.Printf("Error with creating default client: %v\n", err5)
+	}
+
+	o.DefClient = client
 
 	go func(sess *s3.S3) {
-		remotename, remotefile, e := o.Options.GetNewestRemoteDB(sess)
+		remotename, remotefile, e := o.GetNewestRemoteDB(sess)
 		info := RemoteFileSumary{
 			Name:  remotename,
 			File:  remotefile,
@@ -138,7 +192,7 @@ func (o *OptionMeta) PushPull(client *s3.S3) error {
 		}
 
 		remoteinfo <- info
-	}(client)
+	}(o.DefClient.Client)
 
 	// I hate all these variables, probably stupid to do all that crap to make the
 	// local and remote search concurrent with each other, but whatever.
@@ -166,7 +220,11 @@ func (o *OptionMeta) PushPull(client *s3.S3) error {
 		{
 
 		}
-
+	case lmod.UnixNano() == rmod.UnixNano():
+		{
+			fmt.Println("Latest version of local binary syncs with the remote binary.")
+			os.Exit(0)
+		}
 	}
 
 	return nil
