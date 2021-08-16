@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"runtime"
 
@@ -76,35 +77,39 @@ func main() {
 	opts := op.NewOptions()
 	defer opts.File.Close()
 
-	switch {
-	case remote.Used:
-		{
-			switch {
-			case list.Used:
-				{
-					if debug.DEBUG == true {
-						opts.PrintRemotes(true)
-					} else {
-						opts.PrintRemotes(false)
-					}
-				}
-			case add.Used:
-				{
-					opts.AddRemote()
-				}
-			case delete.Used:
-				{
-					opts.RemoveRemote()
-				}
-			case update.Used:
-				{
-					opts.UpdateRemote()
+	if remote.Used {
+		switch {
+		case list.Used:
+			{
+				if debug.DEBUG == true {
+					opts.PrintRemotes(true)
+				} else {
+					opts.PrintRemotes(false)
 				}
 			}
+		case add.Used:
+			{
+				opts.AddRemote()
+			}
+		case delete.Used:
+			{
+				opts.RemoveRemote()
+			}
+		case update.Used:
+			{
+				opts.UpdateRemote()
+			}
 		}
-	case sync.Used:
-		{
-
+	} else if sync.Used {
+		// sync stuff up
+		err := opts.PushPull()
+		if err != nil {
+			fmt.Println(err)
+		}
+	} else {
+		err1 := opts.PushPull()
+		if err1 != nil {
+			fmt.Println(err1)
 		}
 	}
 

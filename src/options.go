@@ -49,12 +49,12 @@ type OptionMeta struct {
 type Options struct {
 	// Specifies the supposed name of the databse that you want to sync
 	// with this binary. Should be a name
-	DatabaseName string `json:"db_name" yaml:"databaseName"`
-	// Array of remotes that can be uploaded to/downloaded form.
-	Remotes []Remote `json:"remotes" yaml:"Remotes"`
+	DatabaseName string `json:"db_name" yaml:"DatabaseName"`
 	// Use this regex to match files in the specified directory and just choose
 	// the newest file that is matched by tyhe regex.
-	DatabaseRegex string `json:"db_regex" yaml:"databaseRegex"`
+	DatabaseRegex string `json:"db_regex" yaml:"DatabaseRegex"`
+	// Array of remotes that can be uploaded to/downloaded form.
+	Remotes []Remote `json:"remotes" yaml:"Remotes"`
 }
 
 // Describes a remote object, or a specific instance
@@ -68,14 +68,14 @@ type Remote struct {
 	// Specify the bucket name to sync with
 	Bucket string `json:"bucket" yaml:"Bucket"`
 	// API key id of the remote.
-	Id string `json:"api_id" yaml:"apiId"`
+	Id string `json:"api_id" yaml:"ApiId"`
 	// API key of the remote.
-	Key string `json:"api_key" yaml:"apiKey"`
+	Key string `json:"api_key" yaml:"ApiKey"`
 	// Only one of these remotes can be specified as default, but if this
 	// bool is set to true, the binary will default to try and sync with
 	// this remote as the first attempt. Only one remote in each file can be set
 	// to default, otherwise the "default" remote will be inconsistently chosen.
-	IsDefault bool `json:"isdefault" yaml:"isDefault"`
+	IsDefault bool `json:"isdefault" yaml:"IsDefault"`
 }
 
 // List of all remotes and their s3 client for utilizing for synching.
