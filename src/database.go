@@ -296,7 +296,7 @@ func (o *OptionMeta) PushtoRemote(rinfo *RemoteFileSumary, linfo *LocalFileSumma
 		Body:   linfo.File,
 	}
 
-	out, err := rinfo.Client.Client.PutObject(in)
+	_, err := rinfo.Client.Client.PutObject(in)
 	if err != nil {
 		return err
 	}
