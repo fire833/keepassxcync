@@ -162,7 +162,7 @@ type LocalFileSummary struct {
 	// Pointer to some file object that is either an s3 object version or an os.File
 	File *os.File
 	// Error if there was any with finding the operation.
-	Error error
+	// Error error
 }
 
 type RemoteFileSumary struct {
@@ -171,7 +171,8 @@ type RemoteFileSumary struct {
 	// Pointer to some file object that is either an s3 object version or an os.File
 	File *s3.ObjectVersion
 	// Error if there was any with finding the operation.
-	Error error
+	// Error error
+
 	// Return client that should be used for future operations.
 	Client *Client
 }
@@ -181,65 +182,48 @@ type RemoteFileSumary struct {
 // Designed to be used by default running of the binary or in "sync" mode.
 func (o *OptionMeta) PushPull() error {
 
-	localinfo := make(chan LocalFileSummary)
-	remoteinfo := make(chan RemoteFileSumary)
+	localname, localfile, e := o.GetNewestLocalDB()
+	if e != nil {
+		return e
+	}
 
-	go func(in string) {
-		localname, localfile, e := o.GetNewestLocalDB()
-		info := LocalFileSummary{
-			Name:  localname,
-			File:  localfile,
-			Error: e,
-		}
+	linfo := &LocalFileSummary{
+		Name: localname,
+		File: localfile,
+	}
 
-		localinfo <- info
+	remotename, remotefile, client, e1 := o.GetNewestRemoteDB()
+	if e1 != nil {
+		return e1
+	}
 
-	}(fp.Dir(o.FilePath))
+	rinfo := &RemoteFileSumary{
+		Name:   remotename,
+		File:   remotefile,
+		Client: client,
+	}
 
-	go func() {
-		remotename, remotefile, client, e := o.GetNewestRemoteDB()
-		info := RemoteFileSumary{
-			Name:   remotename,
-			File:   remotefile,
-			Error:  e,
-			Client: client,
-		}
-
-		remoteinfo <- info
-	}()
-
-	// I hate all these variables, probably stupid to do all that crap to make the
-	// local and remote search concurrent with each other, but whatever.
-	linf := <-localinfo
-	rinf := <-remoteinfo
-
-	info, _ := linf.File.Stat()
+	info, _ := localfile.Stat()
 	lmod := info.ModTime()
-	rmod := *rinf.File.LastModified
+	rmod := *remotefile.LastModified
 
 	switch {
-	case linf.Error != nil:
-		{
-			fmt.Printf("Error with getting local file information: %v", linf.Error)
-		}
-	case rinf.Error != nil:
-		{
-			fmt.Printf("Error with getting remote file information: %v", rinf.Error)
-		}
 	// This is when the newest local database is newer than the remote one,
 	// and thus it should be uploaded to the remote.
-	case lmod.UnixNano() > rmod.UnixNano() && linf.Error == nil && rinf.Error == nil:
+	case lmod.UnixNano() > rmod.UnixNano() && e == nil && e1 == nil:
 		{
-			o.PushtoRemote(&rinf, &linf)
+			fmt.Printf("Pushing local version of database %v to remote.\n", o.Options.DatabaseName)
+			o.PushtoRemote(rinfo, linfo)
 		}
 	// This is when the newest local databse is older than the remote,
 	// and thus the remote is newest and should be downloaded and added
 	// to the directory with a timestamp
-	case lmod.UnixNano() < rmod.UnixNano() && linf.Error == nil && rinf.Error == nil:
+	case lmod.UnixNano() < rmod.UnixNano() && e == nil && e1 == nil:
 		{
-			o.PulltoLocal(&rinf, &linf)
+			fmt.Printf("Pulling remote version of %v database to local.\n", o.Options.DatabaseName)
+			o.PulltoLocal(rinfo, linfo)
 		}
-	case lmod.UnixNano() == rmod.UnixNano() && linf.Error == nil && rinf.Error == nil:
+	case lmod.UnixNano() == rmod.UnixNano() && e == nil && e1 == nil:
 		{
 			fmt.Println("Latest version of local binary syncs with the remote binary.")
 			os.Exit(0)
@@ -284,6 +268,8 @@ func (o *OptionMeta) PulltoLocal(rinfo *RemoteFileSumary, linfo *LocalFileSummar
 		return err2
 	}
 
+	fmt.Printf("Successfully pulled! Here is the response data from the download: %v\n", out)
+
 	return nil
 
 }
@@ -296,10 +282,12 @@ func (o *OptionMeta) PushtoRemote(rinfo *RemoteFileSumary, linfo *LocalFileSumma
 		Body:   linfo.File,
 	}
 
-	_, err := rinfo.Client.Client.PutObject(in)
+	out, err := rinfo.Client.Client.PutObject(in)
 	if err != nil {
 		return err
 	}
+
+	fmt.Printf("File uploaded! Here is the response data from the upload: %v\n", out)
 
 	return nil
 

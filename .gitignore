@@ -18,3 +18,4 @@ options.yml
 options.yaml
 options.json
 opts.yml
+*.kdbx
