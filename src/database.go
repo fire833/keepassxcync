@@ -268,6 +268,8 @@ func (o *OptionMeta) PulltoLocal(rinfo *RemoteFileSumary, linfo *LocalFileSummar
 		return err2
 	}
 
+	file.Sync()
+
 	fmt.Printf("Successfully pulled! Here is the response data from the download: %v\n", out)
 
 	return nil

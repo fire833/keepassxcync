@@ -19,3 +19,7 @@ options.yaml
 options.json
 opts.yml
 *.kdbx
+
+# Added by cargo
+
+/target
