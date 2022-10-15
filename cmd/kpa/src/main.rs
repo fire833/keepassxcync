@@ -18,7 +18,9 @@
 
 // use std::fs::File;
 use clap::{App, Arg, ArgMatches};
-use std::{path::Path, fs};
+use std::{path::Path, fs::{self}, io::{Write}};
+use sha1::{Sha1, Digest};
+use sha2::{Sha256, Sha512};
 
 fn main() {
     let cli: App = App::new("kpa")
@@ -35,19 +37,58 @@ fn main() {
     let args: ArgMatches = cli.get_matches();
 
     match args.value_of("file") {
-        Some(path) => match fs::read_to_string(Path::new(path)) {
+        Some(path) => match fs::read(Path::new(path)) {
             Err(error) => {
-                println!("Unable to read file {}\n", error);
+                println!("Unable to read file, error: {}\n", error);
                 std::process::exit(1);
             }
             Ok(file) => {
-                print_data(file.as_bytes());
+                print_data(file, path);
             }
         },
-        None => {}
+        None => {
+            println!("database file path not provided");
+            std::process::exit(1);
+        }
     }
 }
 
-fn print_data(file_data: &[u8]) {
-    print!("{:?}", file_data);
+fn print_data(file_data: Vec<u8>, file_name: &str) {
+    let file_bytes = file_data.as_slice();
+    let count: usize = file_bytes.len();
+
+    let mut sha1 = Sha1::new();
+    let mut sha256 = Sha256::new();
+    let mut sha512 = Sha512::new();
+    
+    match sha1.write(&file_bytes) {
+        Ok(_) => {}
+        Err(_) => {}
+    }
+    match sha256.write(&file_bytes) {
+        Ok(_) => {}
+        Err(_) => {}
+    }
+    match sha512.write(&file_bytes) {
+        Ok(_) => {}
+        Err(_) => {}
+    }
+
+    print!("Database file {} info:
+
+File Size: {} bytes, or {} kilobytes
+SHA1 Hash: {:x}
+SHA256 Hash: {:x}
+SHA512 Hash: {:x}", file_name, 
+    &count, &count / 1000, 
+    sha1.finalize(), 
+    sha256.finalize(),
+    sha512.finalize(),
+);
+
+    // let mut i = 0;
+    // for byte in file_bytes {
+
+    // }
+
 }

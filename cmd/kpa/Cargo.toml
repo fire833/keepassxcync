@@ -8,3 +8,5 @@ publish = false
 
 [dependencies]
 clap = { version = "3.0.13", features = ["derive"] }
+sha1 = "0.10.5"
+sha2 = "0.10.6"
