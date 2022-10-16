@@ -18,9 +18,14 @@
 
 // use std::fs::File;
 use clap::{App, Arg, ArgMatches};
-use std::{path::Path, fs::{self}, io::{Write}};
-use sha1::{Sha1, Digest};
+use sha1::{Digest, Sha1};
 use sha2::{Sha256, Sha512};
+use std::{
+    fs::{self},
+    io::Write,
+    path::Path,
+    process::exit,
+};
 
 fn main() {
     let cli: App = App::new("kpa")
@@ -40,7 +45,7 @@ fn main() {
         Some(path) => match fs::read(Path::new(path)) {
             Err(error) => {
                 println!("Unable to read file, error: {}\n", error);
-                std::process::exit(1);
+                exit(1);
             }
             Ok(file) => {
                 print_data(file, path);
@@ -48,19 +53,52 @@ fn main() {
         },
         None => {
             println!("database file path not provided");
-            std::process::exit(1);
+            exit(1);
         }
     }
 }
+
+/// Header signature for keepass databases. All files will start with this value.
+const KEEPASSSIGNATURE1: [u8; 4] = [3, 217, 162, 154];
+
+/// for .kdb files (KeePass 1.x file format)
+const KDBSIGNATURE: [u8; 4] = [101, 251, 75, 181];
+
+/// for kdbx file of KeePass 2.x pre-release (alpha & beta)
+const KDBXSIGNATURE1: [u8; 4] = [102, 251, 75, 181];
+
+/// for kdbx file of KeePass post-release
+const KDBXSIGNATURE2: [u8; 4] = [103, 251, 75, 181];
 
 fn print_data(file_data: Vec<u8>, file_name: &str) {
     let file_bytes = file_data.as_slice();
     let count: usize = file_bytes.len();
 
+    // Check to make sure this is a keepass database.
+    if file_bytes[0..4] != KEEPASSSIGNATURE1 {
+        println!(
+            "file {} does not appear to be a keepass database, exiting",
+            file_name
+        );
+        exit(1);
+    }
+
+    let sig2 = &file_bytes[4..8];
+
+    if sig2 == KDBSIGNATURE {
+    } else if sig2 == KDBXSIGNATURE1 || sig2 == KDBXSIGNATURE2 {
+    } else {
+        println!(
+            "error in processing file: signature2 ({:?}) does not match any kdb|x signatures",
+            sig2
+        );
+        exit(1);
+    }
+
     let mut sha1 = Sha1::new();
     let mut sha256 = Sha256::new();
     let mut sha512 = Sha512::new();
-    
+
     match sha1.write(&file_bytes) {
         Ok(_) => {}
         Err(_) => {}
@@ -74,21 +112,20 @@ fn print_data(file_data: Vec<u8>, file_name: &str) {
         Err(_) => {}
     }
 
-    print!("Database file {} info:
+    print!(
+        "Database file {} info:
 
 File Size: {} bytes, or {} kilobytes
 SHA1 Hash: {:x}
 SHA256 Hash: {:x}
-SHA512 Hash: {:x}", file_name, 
-    &count, &count / 1000, 
-    sha1.finalize(), 
-    sha256.finalize(),
-    sha512.finalize(),
-);
+SHA512 Hash: {:x}",
+        file_name,
+        &count,
+        &count / 1000,
+        sha1.finalize(),
+        sha256.finalize(),
+        sha512.finalize(),
+    );
 
-    // let mut i = 0;
-    // for byte in file_bytes {
-
-    // }
-
+    let _ = file_bytes[0..3];
 }
