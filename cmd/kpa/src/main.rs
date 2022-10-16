@@ -16,6 +16,9 @@
 *	51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+mod kdb;
+mod kdbx;
+
 // use std::fs::File;
 use clap::{App, Arg, ArgMatches};
 use sha1::{Digest, Sha1};
@@ -70,6 +73,12 @@ const KDBXSIGNATURE1: [u8; 4] = [102, 251, 75, 181];
 /// for kdbx file of KeePass post-release
 const KDBXSIGNATURE2: [u8; 4] = [103, 251, 75, 181];
 
+trait KDBXInfo<T, E> {
+    fn parse(&mut self, data: &[u8]) -> Result<T, E>;
+
+    fn format_info(&self) -> String;
+}
+
 fn print_data(file_data: Vec<u8>, file_name: &str) {
     let file_bytes = file_data.as_slice();
     let count: usize = file_bytes.len();
@@ -86,7 +95,11 @@ fn print_data(file_data: Vec<u8>, file_name: &str) {
     let sig2 = &file_bytes[4..8];
 
     if sig2 == KDBSIGNATURE {
+        let kdbheader = kdb::new();
+
     } else if sig2 == KDBXSIGNATURE1 || sig2 == KDBXSIGNATURE2 {
+        let kdbxheader = kdbx::new();
+
     } else {
         println!(
             "error in processing file: signature2 ({:?}) does not match any kdb|x signatures",
