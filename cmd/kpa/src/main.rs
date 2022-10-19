@@ -73,8 +73,8 @@ const KDBXSIGNATURE1: [u8; 4] = [102, 251, 75, 181];
 /// for kdbx file of KeePass post-release
 const KDBXSIGNATURE2: [u8; 4] = [103, 251, 75, 181];
 
-trait KDBXInfo<T, E> {
-    fn parse(&mut self, data: &[u8]) -> Result<T, E>;
+trait KDBXInfo {
+    fn parse(&mut self, data: &[u8]) -> Result<(), &str>;
 
     fn format_info(&self) -> String;
 }
@@ -82,6 +82,7 @@ trait KDBXInfo<T, E> {
 fn print_data(file_data: Vec<u8>, file_name: &str) {
     let file_bytes = file_data.as_slice();
     let count: usize = file_bytes.len();
+    let file_data: String;
 
     // Check to make sure this is a keepass database.
     if file_bytes[0..4] != KEEPASSSIGNATURE1 {
@@ -95,10 +96,28 @@ fn print_data(file_data: Vec<u8>, file_name: &str) {
     let sig2 = &file_bytes[4..8];
 
     if sig2 == KDBSIGNATURE {
-        let kdbheader = kdb::new();
+        let mut kdbheader = kdb::new();
+        match kdbheader.parse(file_bytes) {
+            Ok(()) => {
+                file_data = kdbheader.format_info();
+            }
+            Err(error) => {
+                println!("{}", error);
+                exit(1);
+            }
+        }
 
     } else if sig2 == KDBXSIGNATURE1 || sig2 == KDBXSIGNATURE2 {
-        let kdbxheader = kdbx::new();
+        let mut kdbxheader = kdbx::new();
+        match kdbxheader.parse(file_bytes) {
+            Ok(()) => {
+                file_data = kdbxheader.format_info();
+            }
+            Err(error) => {
+                println!("{}", error);
+                exit(1);
+            }
+        }
 
     } else {
         println!(
@@ -131,13 +150,18 @@ fn print_data(file_data: Vec<u8>, file_name: &str) {
 File Size: {} bytes, or {} kilobytes
 SHA1 Hash: {:x}
 SHA256 Hash: {:x}
-SHA512 Hash: {:x}",
+SHA512 Hash: {:x}
+
+Metadata:
+{}
+",
         file_name,
         &count,
         &count / 1000,
         sha1.finalize(),
         sha256.finalize(),
         sha512.finalize(),
+        file_data,
     );
 
     let _ = file_bytes[0..3];

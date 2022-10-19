@@ -6,7 +6,10 @@
 *	the Free Software Foundation; either version 2 of the License, or
 *	(at your option) any later version.
 *
-*	This program is distributed in the hope that it will be useful,
+*	This program is distributed in the hope that it will be u
+    flags: [u8; 4],
+
+    version: [u8; 4],seful,
 *	but WITHOUT ANY WARRANTY; without even the implied warranty of
 *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 *	GNU General Public License for more details.
@@ -22,9 +25,8 @@ const KDB1HEADERSIZE: usize = 4 + 4 + 16 + 16 + 4 + 4 + 32 + 32 + 4;
 
 /// Information stored within keepass (kdb) header file. This will be a constant set of bytes,
 /// so the struct is a lot simpler than the TLV parser setup within KDBXHeader struct.
-struct KDBHeader {
+pub struct KDBHeader {
     flags: [u8; 4],
-
     version: [u8; 4],
 }
 
@@ -32,11 +34,15 @@ pub fn new() -> KDBHeader {
     KDBHeader {
         flags: [0; 4],
         version: [0; 4],
-    };
+    }
 }
 
 impl KDBXInfo for KDBHeader {
-    fn parse(&mut self, data: &[u8]) -> Result<u8, std::error::Error> {}
+    fn parse(&mut self, data: &[u8]) -> Result<(), &str> {
+        Ok(())
+    }
 
-    fn format_info(&self) -> String {}
+    fn format_info(&self) -> String {
+        format!("")
+    }
 }

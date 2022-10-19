@@ -18,18 +18,18 @@
 
 use crate::KDBXInfo;
 
-struct KDBXHeader<T, E> {}
+pub struct KDBXHeader {}
 
 pub fn new() -> KDBXHeader {
     KDBXHeader {}
 }
 
-impl KDBXInfo for KDBXHeader<T, E> {
-    fn parse(&mut self, data: &[u8]) -> Result<usize, usize> {
-        
+impl KDBXInfo for KDBXHeader {
+    fn parse(&mut self, data: &[u8]) -> Result<(), &str> {
+        Ok(())
     }
 
     fn format_info(&self) -> String {
-        
+        format!("")
     }
 }
