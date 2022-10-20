@@ -74,7 +74,7 @@ const KDBXSIGNATURE1: [u8; 4] = [102, 251, 75, 181];
 const KDBXSIGNATURE2: [u8; 4] = [103, 251, 75, 181];
 
 trait KDBXInfo {
-    fn parse(&mut self, data: &[u8]) -> Result<(), &str>;
+    fn parse(&mut self, data: &[u8]) -> Result<(), String>;
 
     fn format_info(&self) -> String;
 }
@@ -97,7 +97,7 @@ fn print_data(file_data: Vec<u8>, file_name: &str) {
 
     if sig2 == KDBSIGNATURE {
         let mut kdbheader = kdb::new();
-        match kdbheader.parse(file_bytes) {
+        match kdbheader.parse(&file_bytes[8..]) {
             Ok(()) => {
                 file_data = kdbheader.format_info();
             }
@@ -106,10 +106,9 @@ fn print_data(file_data: Vec<u8>, file_name: &str) {
                 exit(1);
             }
         }
-
     } else if sig2 == KDBXSIGNATURE1 || sig2 == KDBXSIGNATURE2 {
         let mut kdbxheader = kdbx::new();
-        match kdbxheader.parse(file_bytes) {
+        match kdbxheader.parse(&file_bytes[8..]) {
             Ok(()) => {
                 file_data = kdbxheader.format_info();
             }
@@ -118,7 +117,6 @@ fn print_data(file_data: Vec<u8>, file_name: &str) {
                 exit(1);
             }
         }
-
     } else {
         println!(
             "error in processing file: signature2 ({:?}) does not match any kdb|x signatures",

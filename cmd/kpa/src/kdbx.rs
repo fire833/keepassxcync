@@ -16,6 +16,8 @@
 *	51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+use std::io::BufReader;
+
 use crate::KDBXInfo;
 
 pub struct KDBXHeader {}
@@ -25,7 +27,7 @@ pub fn new() -> KDBXHeader {
 }
 
 impl KDBXInfo for KDBXHeader {
-    fn parse(&mut self, data: &[u8]) -> Result<(), &str> {
+    fn parse(&mut self, data: &[u8]) -> Result<(), String> {
         Ok(())
     }
 
