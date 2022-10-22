@@ -2,3 +2,5 @@
 # Added by cargo
 
 /target
+
+*.kdbx

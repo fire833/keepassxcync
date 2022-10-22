@@ -73,8 +73,8 @@ impl KDBXInfo for KDBHeader {
             data[33], data[34], data[35], data[36], data[37], data[38], data[39], data[40],
         ];
 
-        self.num_groups = i32::from_ne_bytes([data[41], data[42], data[43], data[44]]) as u32;
-        self.num_entries = i32::from_ne_bytes([data[45], data[46], data[47], data[48]]) as u32;
+        self.num_groups = u32::from_ne_bytes([data[41], data[42], data[43], data[44]]);
+        self.num_entries = u32::from_ne_bytes([data[45], data[46], data[47], data[48]]);
 
         self.sha256 = format!(
             "{:x?}",
@@ -99,7 +99,7 @@ impl KDBXInfo for KDBHeader {
             ]
         );
 
-        self.encr_rounds = i32::from_ne_bytes([data[114], data[115], data[116], data[117]]) as u32;
+        self.encr_rounds = u32::from_ne_bytes([data[114], data[115], data[116], data[117]]);
 
         Ok(())
     }
