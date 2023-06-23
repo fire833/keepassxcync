@@ -1,10 +1,21 @@
 module github.com/fire833/keepassxcync
 
-go 1.16
+go 1.20
 
 require (
-	github.com/aws/aws-sdk-go v1.39.2 // Used for s3 things
-	github.com/integrii/flaggy v1.4.4 // Better flag package
-	golang.org/x/term v0.0.0-20210615171337-6886f2dfbf5b // Read password from terminal
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // Unmarshalling yaml stuffs
+	github.com/aws/aws-sdk-go v1.44.289 // Used for s3 things
+	github.com/integrii/flaggy v1.5.2 // Better flag package
+	golang.org/x/term v0.9.0 // Read password from terminal
+	gopkg.in/yaml.v3 v3.0.1 // Unmarshalling yaml stuffs
+)
+
+require (
+	github.com/spf13/cobra v1.7.0
+	github.com/spf13/pflag v1.0.5
+)
+
+require (
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	golang.org/x/sys v0.9.0 // indirect
 )
