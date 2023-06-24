@@ -29,8 +29,6 @@ import (
 	f "github.com/integrii/flaggy"
 )
 
-var OP int = 0 // Operation mode for the binary during this run
-
 var (
 	DBNAME  string // name of database file to interact upon
 	DEFAULT bool   // Var to pass around whether or not to set a remote as the default value.
@@ -48,7 +46,7 @@ var globalS3 *s3.S3
 
 func main() {
 	f.SetName("Keepassxcync")
-	f.SetDescription("A portable binary to automatically sync your keepass/keepassx/keepassxc databases to multiple remote clouds. ")
+	f.SetDescription("A portable binary to automatically sync your keepass/keepassx/keepassxc databases to multiple remote clouds.")
 	f.SetVersion(Version + "\nGit Commit: " + Commit + "\nGo Version: " + Go + "\nOS: " + Os + "\nArchitecture: " + Arch)
 
 	// remote subcommands.

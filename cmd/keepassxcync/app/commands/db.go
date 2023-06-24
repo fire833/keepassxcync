@@ -19,6 +19,7 @@
 package commands
 
 import (
+	"github.com/fire833/keepassxcync/cmd/keepassxcync/app/commands/db"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -29,7 +30,7 @@ func NewDBCommand() *cobra.Command {
 		Aliases: []string{},
 		Example: "",
 		Short:   "",
-		Long:    "",
+		Long:    ``,
 		Version: "0.0.1",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return nil
@@ -39,7 +40,12 @@ func NewDBCommand() *cobra.Command {
 	set := pflag.NewFlagSet("db", pflag.ExitOnError)
 
 	cmd.Flags().AddFlagSet(set)
-	cmd.AddCommand()
+	cmd.AddCommand(
+		db.NewADDCommand(),
+		db.NewREMOVECommand(),
+		db.NewLISTCommand(),
+		db.NewSETCommand(),
+	)
 
 	return cmd
 }

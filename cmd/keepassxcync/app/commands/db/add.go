@@ -29,7 +29,7 @@ func NewADDCommand() *cobra.Command {
 		Aliases: []string{},
 		Example: "",
 		Short:   "",
-		Long:    "",
+		Long:    ``,
 		Version: "0.0.1",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return nil

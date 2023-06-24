@@ -16,30 +16,33 @@
 *	51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-package commands
+package utils
 
 import (
-	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
+	"bufio"
+	"fmt"
 )
 
-func NewSTATUSCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "status",
-		Aliases: []string{},
-		Example: "",
-		Short:   "",
-		Long:    ``,
-		Version: "0.0.1",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return nil
-		},
+func UserInputNotNull(s *bufio.Scanner) string {
+	s.Scan()
+	if s.Text() == "" {
+		fmt.Print("this value cannot be null, please specify: ")
+		return UserInputNotNull(s)
+	} else {
+		return s.Text()
 	}
+}
 
-	set := pflag.NewFlagSet("status", pflag.ExitOnError)
+func UserInputNotNullDefault(s *bufio.Scanner, def string) string {
+	s.Scan()
+	if s.Text() == "" {
+		return def
+	} else {
+		return s.Text()
+	}
+}
 
-	cmd.Flags().AddFlagSet(set)
-	cmd.AddCommand()
-
-	return cmd
+func UserInputOptional(s *bufio.Scanner) string {
+	s.Scan()
+	return s.Text()
 }

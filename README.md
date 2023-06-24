@@ -1,2 +1,4 @@
+
 # keepassxcync
-A portable synchronization binary for your keepass databases. 
+
+A portable synchronization binary for your `keepassxc` databases. 

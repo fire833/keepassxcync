@@ -19,6 +19,7 @@
 package app
 
 import (
+	"github.com/fire833/keepassxcync/cmd/keepassxcync/app/commands"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -29,7 +30,7 @@ func NewKPXCCommand() *cobra.Command {
 		Aliases: []string{},
 		Example: "",
 		Short:   "",
-		Long:    "",
+		Long:    ``,
 		Version: "0.0.1",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return nil
@@ -38,8 +39,18 @@ func NewKPXCCommand() *cobra.Command {
 
 	set := pflag.NewFlagSet("kpxc", pflag.ExitOnError)
 
+	persistentSet := pflag.NewFlagSet("kpxcp", pflag.ExitOnError)
+
 	cmd.Flags().AddFlagSet(set)
-	cmd.AddCommand()
+	cmd.PersistentFlags().AddFlagSet(persistentSet)
+
+	cmd.AddCommand(
+		commands.NewDBCommand(),
+		commands.NewSTATUSCommand(),
+		commands.NewSYNCCommand(),
+		commands.NewPULLCommand(),
+		commands.NewPUSHCommand(),
+	)
 
 	return cmd
 }

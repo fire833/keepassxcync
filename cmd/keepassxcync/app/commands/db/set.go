@@ -16,16 +16,16 @@
 *	51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-package commands
+package db
 
 import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
-func NewSTATUSCommand() *cobra.Command {
+func NewSETCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "status",
+		Use:     "set",
 		Aliases: []string{},
 		Example: "",
 		Short:   "",
@@ -36,7 +36,7 @@ func NewSTATUSCommand() *cobra.Command {
 		},
 	}
 
-	set := pflag.NewFlagSet("status", pflag.ExitOnError)
+	set := pflag.NewFlagSet("set", pflag.ExitOnError)
 
 	cmd.Flags().AddFlagSet(set)
 	cmd.AddCommand()
