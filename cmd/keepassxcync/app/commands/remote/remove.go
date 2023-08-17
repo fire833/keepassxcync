@@ -16,23 +16,30 @@
 *	51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-package main
+package remote
 
 import (
-	"runtime"
-
-	"github.com/fire833/keepassxcync/cmd/keepassxcync/app"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
-var (
-	Version string = "unknown"         // String to pass in the version to the binary at compiletime.
-	Commit  string = "unknown"         // Git commit version of this binary.
-	Go      string = runtime.Version() // Go version at runtime.
-	Os      string = runtime.GOOS      // operating system for this binary
-	Arch    string = runtime.GOARCH    // architecture for this binary
-)
+func NewREMOVECommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "remove",
+		Aliases: []string{},
+		Short:   "",
+		Long:    "",
+		Version: "0.0.1",
+		Example: "",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return nil
+		},
+	}
 
-func main() {
-	cmd := app.NewKPXCCommand()
-	cmd.Execute()
+	set := pflag.NewFlagSet("remove", pflag.ExitOnError)
+
+	cmd.Flags().AddFlagSet(set)
+	cmd.AddCommand()
+
+	return cmd
 }

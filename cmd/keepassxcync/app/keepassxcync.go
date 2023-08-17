@@ -25,13 +25,18 @@ import (
 )
 
 func NewKPXCCommand() *cobra.Command {
+	var configFile, secretsFile string
+
 	cmd := &cobra.Command{
-		Use:     "keepassxc",
+		Use:     "keepassxcync",
 		Aliases: []string{},
 		Example: "",
 		Short:   "",
 		Long:    ``,
 		Version: "0.0.1",
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return nil
 		},
@@ -40,12 +45,15 @@ func NewKPXCCommand() *cobra.Command {
 	set := pflag.NewFlagSet("kpxc", pflag.ExitOnError)
 
 	persistentSet := pflag.NewFlagSet("kpxcp", pflag.ExitOnError)
+	set.StringVarP(&configFile, "config", "c", "~/.config/keepassxcync/config.yaml", "Specify configuration file location for keepassxcync")
+	set.StringVarP(&secretsFile, "secrets", "s", "~/.config/keepassxcync/secrets.yaml", "Specify secrets file location for keepassxcync")
 
 	cmd.Flags().AddFlagSet(set)
 	cmd.PersistentFlags().AddFlagSet(persistentSet)
 
 	cmd.AddCommand(
 		commands.NewDBCommand(),
+		commands.NewREMOTECommand(),
 		commands.NewSTATUSCommand(),
 		commands.NewSYNCCommand(),
 		commands.NewPULLCommand(),

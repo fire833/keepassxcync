@@ -29,7 +29,10 @@ import (
 )
 
 func Build() error {
-	version := os.Getenv("VERSION")
+	return BuildVer(os.Getenv("VERSION"))
+}
+
+func BuildVer(version string) error {
 	commit, e := sh.Output("git", "rev-parse", "HEAD")
 	if e != nil {
 		return e
