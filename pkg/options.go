@@ -37,7 +37,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/fire833/keepassxcync/pkg/config/debug"
 )
 
 type OptionMeta struct {
@@ -126,7 +125,7 @@ func NewOptions() (o *OptionMeta) {
 		for _, r := range file {
 
 			info, err1 := r.Info()
-			if err1 != nil && debug.DEBUG {
+			if err1 != nil {
 				fmt.Printf("Failed to get fileinfo from file: %v, error was: %v\n", info.Name(), err1)
 				continue
 			} else if err1 != nil {
@@ -134,7 +133,7 @@ func NewOptions() (o *OptionMeta) {
 			}
 
 			file, err2 := os.ReadFile(fp.Join(os.Getenv("PWD"), info.Name()))
-			if err2 != nil && debug.DEBUG {
+			if err2 != nil {
 				fmt.Printf("Failed to read file %v, error was: %v\n", info.Name(), err2)
 			} else if err2 != nil {
 				continue
@@ -144,7 +143,7 @@ func NewOptions() (o *OptionMeta) {
 			case "options.json":
 				{
 					err3 := json.Unmarshal(file, opts)
-					if err3 != nil && debug.DEBUG {
+					if err3 != nil {
 						fmt.Printf("Failed to unmarshall json file %v , error: %v", info.Name(), err3)
 						continue
 					} else if err3 != nil {
@@ -154,7 +153,7 @@ func NewOptions() (o *OptionMeta) {
 			case "options.yaml", "options.yml":
 				{
 					err4 := yaml.Unmarshal(file, opts)
-					if err4 != nil && debug.DEBUG {
+					if err4 != nil {
 						fmt.Printf("Failed to unmarshall yaml file %v , error: %v", info.Name(), err4)
 						continue
 					} else if err4 != nil {
@@ -168,7 +167,7 @@ func NewOptions() (o *OptionMeta) {
 			}
 
 			fd, err1 := os.OpenFile(fp.Join(os.Getenv("PWD"), r.Name()), os.O_CREATE|os.O_SYNC|os.O_RDWR, 0o755)
-			if err1 != nil && debug.DEBUG {
+			if err1 != nil {
 				fmt.Printf("Unable to open file %v, error: %v", r.Name(), err1)
 			} else if err != nil {
 				os.Exit(1)
@@ -218,7 +217,7 @@ func NewOptions() (o *OptionMeta) {
 		}
 
 		fd, err1 := os.OpenFile(CONFIG, os.O_CREATE|os.O_SYNC|os.O_RDWR, 0o755)
-		if err1 != nil && debug.DEBUG {
+		if err1 != nil {
 			fmt.Printf("Unable to open file %v, error: %v", CONFIG, err1)
 		} else if err != nil {
 			os.Exit(1)

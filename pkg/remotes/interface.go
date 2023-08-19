@@ -16,8 +16,18 @@
 *	51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-package debug
+package remotes
 
-// defines level of verbosity of logs and other things for the binary
-// Defaults to false
-var DEBUG bool = false
+import (
+	"context"
+	"io"
+)
+
+// A remote should be considered an object store that is able to store all
+// versions of the database that are uploaded to it, and be able to reference
+// a specific version, including the latest version on that remote.
+type Remote interface {
+	PersistVersion(ctx context.Context, data io.WriteCloser) error
+	GetVersion(ctx context.Context, version uint) (io.ReadCloser, error)
+	GetLastVersion(ctx context.Context) (uint, error)
+}
